@@ -7,10 +7,14 @@
 It is necessary to analyze the libraries previous to analyze.
 
 ``` bash
-ghdl -a --work=unisim unisim/vcomponents/unisim_VCOMP.vhd
-ghdl -a --work=unisim unisim/*.vhd
+ghdl -a -fsynopsys --work=unisim unisim/vcomponents/unisim_VCOMP.vhd
+ghdl -a -fsynopsys --work=unisim unisim/*.vhd
 ```
 
+
+
+
+XPM repo: https://github.com/fransschreuder/xpm_vhdl
 
 <!-- ## NVC
 
