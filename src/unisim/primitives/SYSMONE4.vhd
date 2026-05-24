@@ -2600,10 +2600,10 @@ end process;
       else
         if((single_pass_finished_pe and not event_driven_mode) or -- single pass finished
           (DWE_in= '1' and DEN_in= '1' and UNSIGNED(DADDR_in)=X"41" and (DI_in(15 downto 12)/= cfg_reg1(15 downto 12))) or --switching to a different op mode
-          (i2c_wr_exec = '1' and i2c_drp_addr=X"41" and i2c_drp_data(15 downto 12)/= cfg_reg1(15 downto 12)) or
+          (i2c_wr_exec = '1' and i2c_drp_addr="0001000001" and i2c_drp_data(15 downto 12)/= cfg_reg1(15 downto 12)) or
           (pmb_wr_exec = '1' and pmb_cmd_in=CMD_MFR_ACCESS_REG and pmb_sel_addr=X"41" and pmb_data_in(15 downto 12)/=cfg_reg1(15 downto 12)) or
           (single_chan_mode and DWE_in='1' and DEN_in='1' and UNSIGNED(DADDR_in)=X"40" and DI_in(5 downto 0)/=cfg_reg0(5 downto 0)) or
-          (i2c_wr_exec = '1' and i2c_drp_addr = X"40" and i2c_drp_data(5 downto 0)/=cfg_reg0(5 downto 0)) or
+          (i2c_wr_exec = '1' and i2c_drp_addr = "0001000000" and i2c_drp_data(5 downto 0)/=cfg_reg0(5 downto 0)) or
           (pmb_wr_exec = '1' and pmb_cmd_in=CMD_MFR_ACCESS_REG and pmb_sel_addr=X"40" and pmb_data_in(5 downto 0)/=cfg_reg0(5 downto 0)) or
           (pmb_wr_exec = '1' and pmb_cmd_in=CMD_PAGE)
           ) then
@@ -4200,7 +4200,7 @@ end process;
     variable adc_mn_tmp : real := 0.0;
   begin
     if (rising_edge(chan_asrt_3)) then
-      if (chan_out_id_cur_slv = "00000") then    -- temperature conversion
+      if (chan_out_id_cur_slv = "000000") then    -- temperature conversion
         if (SIM_DEVICE = "ULTRASCALE_PLUS_ES2" or SIM_DEVICE = "ZYNQ_ULTRASCALE_ES2" or SIM_DEVICE = "ULTRASCALE_PLUS" or SIM_DEVICE = "ZYNQ_ULTRASCALE") then
           adc_mn_tmp   := (mn_mux_in + 280.2308787) * 0.00196343 * 65535.0; --CR 961722 10/20/2016. Internal reference
         else 
@@ -4222,8 +4222,8 @@ end process;
         end if;
         conv_result_int <= conv_result_int_i;
         conv_result <= STD_LOGIC_VECTOR(TO_UNSIGNED(conv_result_int_i, 16));
-      elsif (chan_out_id_cur_slv = "00001" or chan_out_id_cur_slv = "00010" or chan_out_id_cur_slv = "00110" -- 1,2,6
-             or chan_out_id_cur_slv = "01101" or chan_out_id_cur_slv = "01110" or chan_out_id_cur_slv = "01111" -- 13,14,15
+      elsif (chan_out_id_cur_slv = "000001" or chan_out_id_cur_slv = "000010" or chan_out_id_cur_slv = "000110" -- 1,2,6
+             or chan_out_id_cur_slv = "001101" or chan_out_id_cur_slv = "001110" or chan_out_id_cur_slv = "001111" -- 13,14,15
              or ((chan_out_id_cur >= 32) and (chan_out_id_cur <= 35))) then  --32,33,34,35   
         -- internal power conversion
         if((chan_out_id_cur >= 32 and chan_out_id_cur <= 35) and
@@ -4248,7 +4248,7 @@ end process;
         end if;
         conv_result_int <= conv_result_int_i;
         conv_result <= STD_LOGIC_VECTOR(TO_UNSIGNED(conv_result_int_i, 16));
-      elsif ((chan_out_id_cur_slv = "00011") or ((chan_out_id_cur >= 16) and  (chan_out_id_cur <= 31))) then
+      elsif ((chan_out_id_cur_slv = "000011") or ((chan_out_id_cur >= 16) and  (chan_out_id_cur <= 31))) then
         adc_mn_tmp :=  (mn_mux_in) * 65536.0;
         adc_ext_result <= adc_mn_tmp;
         if (curr_b_u = '1')  then --In bipolar mode, -0.5V to +0.5V range maps to -32768 to 32767

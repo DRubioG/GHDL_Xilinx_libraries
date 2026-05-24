@@ -1221,7 +1221,7 @@ begin
             busy_conv <= '1';
         end if;
 
-        if (conv_count = CONV_CAL_PER_5 and curr_chan = "01000" ) then
+        if (conv_count = CONV_CAL_PER_5 and curr_chan = "001000" ) then
               cal_chan_update  <= '1';
          else
               cal_chan_update  <= '0';
@@ -1895,7 +1895,7 @@ begin
         end if;
       end if;
       if(cfg_check_addr_us = X"43") then
-        if ( cfg_reg3(3 downto 0) /= "000") then
+        if ( cfg_reg3(3 downto 0) /= "0000") then
           Write ( Message, string'("Error : [Unisim "));
           Write ( Message, string'(MODULE_NAME));
           Write ( Message, string'("-17] The config reg 3 "));
@@ -2791,7 +2791,7 @@ begin
     variable adc_mn_tmp : real := 0.0;
   begin
     if ((adc_state = S3_ST and adc_next_state = S5_ST) or adc_state = S5_ST) then
-      if (curr_chan = "00000") then    -- temperature conversion
+      if (curr_chan = "000000") then    -- temperature conversion
         adc_mn_tmp := (mn_mux_in + 273.6777) * 0.0019945 * 65536.0; --CR 861679        
         adc_temp_result <= adc_mn_tmp;
         if (adc_mn_tmp >= 65535.0) then
@@ -2809,8 +2809,8 @@ begin
         end if;
         conv_result_int <= conv_result_int_i;
         conv_result <= STD_LOGIC_VECTOR(TO_UNSIGNED(conv_result_int_i, 16));
-      elsif (curr_chan = "00001" or curr_chan = "00010" or curr_chan = "00110"
-             or curr_chan = "01101" or curr_chan = "01110" or curr_chan = "01111"
+      elsif (curr_chan = "000001" or curr_chan = "000010" or curr_chan = "000110"
+             or curr_chan = "001101" or curr_chan = "001110" or curr_chan = "001111"
              or ((curr_chan_index >= 32) and (curr_chan_index <= 35))) then     -- internal power conversion
         adc_mn_tmp := mn_mux_in * 65536.0 / 3.0;
         adc_intpwr_result <= adc_mn_tmp;
@@ -2829,7 +2829,7 @@ begin
         end if;
         conv_result_int <= conv_result_int_i;
         conv_result <= STD_LOGIC_VECTOR(TO_UNSIGNED(conv_result_int_i, 16));
-      elsif ((curr_chan = "00011") or ((curr_chan_index >= 16) and  (curr_chan_index <= 31))) then
+      elsif ((curr_chan = "000011") or ((curr_chan_index >= 16) and  (curr_chan_index <= 31))) then
         adc_mn_tmp :=  (mn_mux_in) * 65536.0;
         if (curr_b_u = '1')  then
           if (adc_mn_tmp > 32767.0) then
@@ -2908,9 +2908,9 @@ begin
         busy_r_rst_done <= '0';
         conv_count <= conv_count + 1;
 
-        if (((curr_chan /= "01000" ) and (conv_count = CONV_NOTCAL_PER_1 )) or 
-            ((curr_chan = "01000") and (conv_count = CONV_CAL_PER_2) and (first_cal_chan = '1')) or
-            ((curr_chan = "01000") and (conv_count = CONV_CAL_PER_3) and (first_cal_chan = '0'))) then
+        if (((curr_chan /= "001000" ) and (conv_count = CONV_NOTCAL_PER_1 )) or 
+            ((curr_chan = "001000") and (conv_count = CONV_CAL_PER_2) and (first_cal_chan = '1')) or
+            ((curr_chan = "001000") and (conv_count = CONV_CAL_PER_3) and (first_cal_chan = '0'))) then
             conv_end <= '1';
         else
             conv_end <= '0';
@@ -3083,7 +3083,7 @@ begin
     elsif (rising_edge(eoc_out)) then
       eoc_out_tmp1 <= '0';
     elsif (rising_edge(eoc_out_tmp)) then
-      if (curr_chan /= "01000") then --if not calibration
+      if (curr_chan /= "001000") then --if not calibration
         eoc_out_tmp1 <= '1';
       else
         eoc_out_tmp1 <= '0';
