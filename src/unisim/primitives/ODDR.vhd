@@ -103,7 +103,7 @@ begin
         end process;
       end generate;
 
-      EDGE_GEN_SYNC : if SRTYPE = "SYNC" generate
+      SAME_EDGE_GEN_SYNC : if SRTYPE = "SYNC" generate
         process (C, R, S)
         begin
 
