@@ -58,6 +58,6 @@ begin
    wait;
   end process;
 
-  O <= TO_X01(I);
+  O <= I;
 
 end AUTOBUF_V;
