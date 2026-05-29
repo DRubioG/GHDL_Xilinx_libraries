@@ -31,5 +31,5 @@ end BUF;
 
 architecture BUF_V of BUF is
 begin
-  O <= TO_X01(I);
+  O <= I;
 end BUF_V;
