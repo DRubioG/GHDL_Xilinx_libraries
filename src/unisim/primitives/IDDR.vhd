@@ -67,13 +67,8 @@ architecture IDDR_V OF IDDR is
 
   constant SYNC_PATH_DELAY : time := 100 ps;
 
-  signal C_ipd	        : std_ulogic := 'X';
-  signal CE_ipd	        : std_ulogic := 'X';
-  signal D_ipd	        : std_ulogic := 'X';
  signal GSR            : std_ulogic := '0';
 --  signal GSR_ipd	: std_ulogic := 'X';
-  signal R_ipd		: std_ulogic := 'X';
-  signal S_ipd		: std_ulogic := 'X';
 
   signal C_dly	        : std_ulogic := 'X';
   signal CE_dly	        : std_ulogic := 'X';
@@ -85,8 +80,6 @@ architecture IDDR_V OF IDDR is
   signal Q1_zd	        : std_ulogic := 'X';
   signal Q2_zd	        : std_ulogic := 'X';
 
-  signal Q1_viol        : std_ulogic := 'X';
-  signal Q2_viol        : std_ulogic := 'X';
 
   signal Q1_o_reg	: std_ulogic := 'X';
   signal Q2_o_reg	: std_ulogic := 'X';
