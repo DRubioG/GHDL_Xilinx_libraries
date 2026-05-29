@@ -1,130 +1,250 @@
+-------------------------------------------------------------------------------
+-- Copyright (c) 1995/2004 Xilinx, Inc.
+-- All Right Reserved.
+-------------------------------------------------------------------------------
+--   ____  ____
+--  /   /\/   /
+-- /___/  \  /    Vendor : Xilinx
+-- \   \   \/     Version : 11.1
+--  \   \         Description : Xilinx Functional Simulation Library Component
+--  /   /                  Dual Data Rate Output D Flip-Flop
+-- /___/   /\     Filename : ODDR.vhd
+-- \   \  /  \    Timestamp : Fri Mar 26 08:18:20 PST 2004
+--  \___\/\___\
+--
+-- Revision:
+--    03/23/04 - Initial version.
+--    05/30/06 - CR 232324 -- Added  timing checks for S/R wrt negedge CLK
+--    04/07/08 - CR 469973 -- Header Description fix
+--    27/05/08 - CR 472154 Removed Vital GSR constructs
+--    10/02/08 - CR 489522 fixed false setup/hold when "_"ve values are in sdf
+--    12/03/08 - CR 498674 added pulldown on R/S.
+--    01/21/09 - CR 503784 pulldown on R/S enhancement.
+--    07/28/09 - CR 527698 According to holistic, CE has to be high for both rise/fall CLK
+--             - If CE is low on the rising edge, it has an effect of no change in the falling CLK. 
+--    06/23/10 - CR 566394 Removed extra recovery/removal checks
+--    11/15/11 - CR 622170 treating "U" and "L" and Logic_0 for ports S and R
+--    10/17/12 - 682802 - convert GSR H/L to 1/0
+-- End Revision
+
+----- CELL ODDR -----
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 
+
+library unisim;
+-- use UNISIM.VPKG.all;
+use unisim.vcomponents.all;
+
 entity ODDR is
-  generic (
-    DDR_CLK_EDGE : string := "OPPOSITE_EDGE";
-    INIT         : bit    := '0';
-    SRTYPE       : string := "ASYNC"
-  );
-  port (
-    Q  : out std_logic;
-    C  : in std_logic;
-    CE : in std_logic;
-    D1 : in std_logic;
-    D2 : in std_logic;
-    R  : in std_logic;
-    S  : in std_logic
-  );
+
+  generic(
+
+      DDR_CLK_EDGE : string := "OPPOSITE_EDGE";
+      INIT         : bit    := '0';
+      IS_C_INVERTED : bit := '0';
+      IS_D1_INVERTED : bit := '0';
+      IS_D2_INVERTED : bit := '0';
+      SRTYPE       : string := "SYNC"
+      );
+
+  port(
+      Q           : out std_ulogic;
+
+      C           : in  std_ulogic;
+      CE          : in  std_ulogic;
+      D1          : in  std_ulogic;
+      D2          : in  std_ulogic;
+      R           : in  std_ulogic := 'L';
+      S           : in  std_ulogic := 'L'
+    );
+
 end ODDR;
 
-architecture behavioral of ODDR is
+architecture ODDR_V OF ODDR is
 
-  signal q_reg : std_logic;
+
+  constant SYNC_PATH_DELAY : time := 100 ps;
+
+  signal C_dly	        : std_ulogic := 'X';
+  signal CE_dly	        : std_ulogic := 'X';
+  signal D1_dly	        : std_ulogic := 'X';
+  signal D2_dly	        : std_ulogic := 'X';
+  signal GSR_dly	: std_ulogic := '0';
+  signal R_dly		: std_ulogic := 'X';
+  signal S_dly		: std_ulogic := 'X';
+
+  signal Q_zd		: std_ulogic := 'X';
+
+  signal ddr_clk_edge_type	: integer := -999;
+  signal sr_type		: integer := -999;
+  signal IS_C_INVERTED_BIN : std_ulogic;
+  signal IS_D1_INVERTED_BIN : std_ulogic;
+  signal IS_D2_INVERTED_BIN : std_ulogic;
+  
 
 begin
 
-  INIT_GEN : if INIT = '1' generate
-    signal q_reg : std_logic := '1';
+  C_dly          	 <= C xor IS_C_INVERTED_BIN           	after 0 ps;
+  CE_dly         	 <= CE             	after 0 ps;
+  D1_dly         	 <= D1 xor IS_D1_INVERTED_BIN          	after 0 ps;
+  D2_dly         	 <= D2 xor IS_D2_INVERTED_BIN          	after 0 ps;
+  GSR_dly        	 <= TO_X01(GSR)    	after 0 ps;
+  R_dly          	 <= R              	after 0 ps;
+  S_dly          	 <= S              	after 0 ps;
+
+  IS_C_INVERTED_BIN <= TO_X01(IS_C_INVERTED);
+  IS_D1_INVERTED_BIN <= TO_X01(IS_D1_INVERTED);
+  IS_D2_INVERTED_BIN <= TO_X01(IS_D2_INVERTED);
+
+  --------------------
+  --  BEHAVIOR SECTION
+  --------------------
+
+--####################################################################
+--#####                     Initialize                           #####
+--####################################################################
+  prcs_init:process
+
   begin
-  else
-    generate
-      signal q_reg : std_logic := '0';
-    begin
-    end generate;
+      if((DDR_CLK_EDGE = "OPPOSITE_EDGE") or (DDR_CLK_EDGE = "opposite_edge")) then
+         ddr_clk_edge_type <= 1;
+      elsif((DDR_CLK_EDGE = "SAME_EDGE") or (DDR_CLK_EDGE = "same_edge")) then
+         ddr_clk_edge_type <= 2;
+      -- else
+      --   GenericValueCheckMessage
+      --     (  HeaderMsg  => " Attribute Syntax Warning ",
+      --        GenericName => " DDR_CLK_EDGE ",
+      --        EntityName => "/ODDR",
+      --        GenericValue => DDR_CLK_EDGE,
+      --        Unit => "",
+      --        ExpectedValueMsg => " The Legal values for this attribute are ",
+      --        ExpectedGenericValue => " OPPOSITE_EDGE or SAME_EDGE.",
+      --        TailMsg => "",
+      --        MsgSeverity => ERROR 
+      --    );
+      end if;
 
-    Q <= q_reg;
+      if((SRTYPE = "ASYNC") or (SRTYPE = "async")) then
+         sr_type <= 1;
+      elsif((SRTYPE = "SYNC") or (SRTYPE = "sync")) then
+         sr_type <= 2;
+      -- else
+      --   GenericValueCheckMessage
+      --     (  HeaderMsg  => " Attribute Syntax Warning ",
+      --        GenericName => " SRTYPE ",
+      --        EntityName => "/ODDR",
+      --        GenericValue => SRTYPE,
+      --        Unit => "",
+      --        ExpectedValueMsg => " The Legal values for this attribute are ",
+      --        ExpectedGenericValue => " ASYNC or SYNC. ",
+      --        TailMsg => "",
+      --        MsgSeverity => ERROR
+      --    );
+      end if;
 
-    EDGE_GEN : if DDR_CLK_EDGE = "OPPOSITE_EDGE" generate
+     wait;
+  end process prcs_init;
+--####################################################################
+--#####                       q1_q2_q3 reg                       #####
+--####################################################################
+  prcs_q1q2q3_reg:process(C_dly, GSR_dly, R_dly, S_dly)
+  variable Q1_var         : std_ulogic := TO_X01(INIT);
+  variable Q2_posedge_var : std_ulogic := TO_X01(INIT);
+  begin
+     if(GSR_dly = '1') then
+         Q1_var         := TO_X01(INIT);
+         Q2_posedge_var := TO_X01(INIT);
+     elsif(GSR_dly = '0') then
+        case sr_type is
+           when 1 => 
+                   if(R_dly = '1') then
+                      Q1_var := '0';
+                      Q2_posedge_var := '0';
+                   elsif(((R_dly = '0') or (R_dly = 'L') or (R_dly = 'U')) and (S_dly = '1')) then
+                      Q1_var := '1';
+                      Q2_posedge_var := '1';
+                   elsif(((R_dly = '0')  or (R_dly = 'L') or (R_dly = 'U')) and ((S_dly = '0') or (S_dly = 'L') or (S_dly = 'U'))) then
+                      if(CE_dly = '1') then
+                         if(rising_edge(C_dly)) then
+                            Q1_var         := D1_dly;
+                            Q2_posedge_var := D2_dly;
+                         end if;
+                         if(falling_edge(C_dly)) then
+                             case ddr_clk_edge_type is
+                                when 1 => 
+                                       Q1_var :=  D2_dly;
+                                when 2 => 
+                                       Q1_var :=  Q2_posedge_var;
+                                when others =>
+                                          null;
+                              end case;
+                         end if;
+-- CR 527698
+                      elsif(CE_dly = '0') then
+                          if(rising_edge(C_dly)) then
+                            Q2_posedge_var := Q_zd;
+                           end if;
+                      end if;
+                   end if;
 
-      EDGE_GEN_ASYNC : if SRTYPE = "ASYNC" generate
-        process (C, R, S)
-        begin
-          if R = '1' or S = '1' then
-            q_reg <= '0';
+           when 2 => 
+                   if(rising_edge(C_dly)) then
+                      if(R_dly = '1') then
+                         Q1_var := '0';
+                         Q2_posedge_var := '0';
+                      elsif(((R_dly = '0')  or (R_dly = 'L') or (R_dly = 'U')) and (S_dly = '1')) then
+                         Q1_var := '1';
+                         Q2_posedge_var := '1';
+                      elsif(((R_dly = '0')  or (R_dly = 'L') or (R_dly = 'U')) and ((S_dly = '0') or (S_dly = 'L') or (S_dly = 'U'))) then
+                         if(CE_dly = '1') then
+                            Q1_var         := D1_dly;
+                            Q2_posedge_var := D2_dly;
+-- CR 527698
+                         elsif(CE_dly = '0') then
+                            Q2_posedge_var := Q_zd;
+                         end if;
+                      end if;
+                   end if;
+                        
+                   if(falling_edge(C_dly)) then
+                      if(R_dly = '1') then
+                         Q1_var := '0';
+                      elsif(((R_dly = '0')  or (R_dly = 'L') or (R_dly = 'U')) and (S_dly = '1')) then
+                         Q1_var := '1';
+                      elsif(((R_dly = '0')  or (R_dly = 'L') or (R_dly = 'U')) and ((S_dly = '0') or (S_dly = 'L') or (S_dly = 'U'))) then
+                         if(CE_dly = '1') then
+                             case ddr_clk_edge_type is
+                                when 1 => 
+                                       Q1_var :=  D2_dly;
+                                when 2 => 
+                                       Q1_var :=  Q2_posedge_var;
+                                when others =>
+                                          null;
+                              end case;
+                         end if;
+                      end if;
+                   end if;
+ 
+           when others =>
+                   null; 
+        end case;
+     end if;
 
-          elsif rising_edge(C) then
-            if CE = '1' then
-              q_reg <= D1;
-            end if;
+     Q_zd <= Q1_var;
 
-          elsif falling_edge(C) then
-            if CE = '1' then
-              q_reg <= D2;
-            end if;
-          end if;
-        end process;
-      end generate;
-      EDGE_GEN_SYNC : if SRTYPE = "SYNC" generate
-        process (C, R, S)
-        begin
+  end process prcs_q1q2q3_reg;
+--####################################################################
 
-          if rising_edge(C) then
+--####################################################################
+--#####                         OUTPUT                           #####
+--####################################################################
+  prcs_output:process(Q_zd)
+  begin
+      Q <= Q_zd after SYNC_PATH_DELAY;
+  end process prcs_output;
+--####################################################################
 
-            if R = '1' or S = '1' then
-              q_reg <= '0';
-            elsif CE = '1' then
-              q_reg <= D1;
-            end if;
 
-          elsif falling_edge(C) then
-            if R = '1' or S = '1' then
-              q_reg <= '0';
-            elsif CE = '1' then
-              q_reg <= D2;
-            end if;
-          end if;
-        end process;
-      end generate;
-    end generate;
-
-    SAME_EDGE_GEN : if DDR_CLK_EDGE = "SAME_EDGE" generate
-
-      signal q_reg1 : std_logic;
-    begin
-
-      EDGE_GEN_ASYNC : if SRTYPE = "ASYNC" generate
-        process (C, R, S)
-        begin
-          if R = '1' or S = '1' then
-            q_reg <= '0';
-
-          elsif rising_edge(C) then
-            if CE = '1' then
-              q_reg  <= D1;
-              q_reg1 <= D2;
-            end if;
-
-          elsif falling_edge(C) then
-            if CE = '1' then
-              q_reg <= q_reg1;
-            end if;
-          end if;
-        end process;
-      end generate;
-
-      SAME_EDGE_GEN_SYNC : if SRTYPE = "SYNC" generate
-        process (C, R, S)
-        begin
-
-          if rising_edge(C) then
-
-            if R = '1' or S = '1' then
-              q_reg <= '0';
-            elsif CE = '1' then
-              q_reg  <= D1;
-              q_reg1 <= D2;
-            end if;
-
-          elsif falling_edge(C) then
-            if R = '1' or S = '1' then
-              q_reg <= '0';
-            elsif CE = '1' then
-              q_reg <= q_reg1;
-            end if;
-          end if;
-        end process;
-      end generate;
-
-    end generate;
-  end behavioral;
+end ODDR_V;
