@@ -31,7 +31,7 @@ end BUFGP;
 
 architecture BUFGP_V of BUFGP is
 begin
-  O <= TO_X01(I);
+  O <= I;
 end BUFGP_V;
 
 

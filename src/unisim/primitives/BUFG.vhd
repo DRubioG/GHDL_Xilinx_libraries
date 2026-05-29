@@ -34,7 +34,7 @@ architecture BUFG_V of BUFG is
   
 begin
   -- begin behavioral model
-  O <= TO_X01(I);
+  O <= I;
   -- end behavioral model
 
 end BUFG_V;
